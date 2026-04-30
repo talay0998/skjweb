@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  role      String   @default("employee")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales         Sale[]
+  inventoryLogs InventoryLog[]
+  shiftLogs     ShiftLog[]
+  expenses      Expense[]
+  operationLogs OperationLog[]
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  costPrice Float
+  stock     Int      @default(0)
+  category  String   @default("默认")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  saleItems     SaleItem[]
+  inventoryLogs InventoryLog[]
+}
+
+model Sale {
+  id            String    @id @default(cuid())
+  operatorId    String
+  operator      User      @relation(fields: [operatorId], references: [id])
+  totalAmount   Float
+  paymentMethod String
+  note          String?
+  voided        Boolean   @default(false)
+  voidReason    String?
+  voidedAt      DateTime?
+  voidedBy      String?
+  items         SaleItem[]
+  createdAt     DateTime  @default(now())
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+  costPrice Float
+}
+
+model InventoryLog {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int
+  costPrice  Float
+  operatorId String
+  operator   User     @relation(fields: [operatorId], references: [id])
+  note       String?
+  createdAt  DateTime @default(now())
+}
+
+model ShiftLog {
+  id           String    @id @default(cuid())
+  operatorId   String
+  operator     User      @relation(fields: [operatorId], references: [id])
+  startBalance Float
+  endBalance   Float
+  totalSales   Float
+  totalCash    Float
+  totalWechat  Float
+  totalAlipay  Float
+  totalOther   Float
+  totalExpense Float     @default(0)
+  difference   Float
+  note         String?
+  expenses     Expense[]
+  createdAt    DateTime  @default(now())
+}
+
+model Expense {
+  id         String    @id @default(cuid())
+  shiftId    String?
+  shift      ShiftLog? @relation(fields: [shiftId], references: [id])
+  amount     Float
+  category   String
+  note       String
+  operatorId String
+  operator   User      @relation(fields: [operatorId], references: [id])
+  createdAt  DateTime  @default(now())
+}
+
+model OperationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  detail    String
+  createdAt DateTime @default(now())
+}
